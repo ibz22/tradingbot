@@ -1,10 +1,21 @@
-import alpaca_trade_api as tradeapi
-import ccxt
+import logging
+
+try:
+    import alpaca_trade_api as tradeapi
+except ImportError:  # pragma: no cover - optional dependency
+    tradeapi = None
+    logging.warning("alpaca_trade_api not installed; Alpaca integration disabled")
+
+try:
+    import ccxt
+except ImportError:  # pragma: no cover - optional dependency
+    ccxt = None
+    logging.warning("ccxt not installed; crypto exchange features disabled")
+
 import pandas as pd
 import numpy as np
 import os
 from datetime import datetime, timedelta
-import logging
 import warnings
 import joblib
 import time
@@ -26,6 +37,8 @@ from contextlib import asynccontextmanager
 import sys
 import argparse
 from functools import wraps
+
+from data_gateway import DataGateway, FMPGateway
 
 warnings.filterwarnings('ignore')
 
@@ -747,7 +760,9 @@ class NotificationManager:
         """Format trade alert message"""
         emoji_map = {"buy": "🟢", "sell": "🔴", "hold": "⚫"}
         emoji = emoji_map.get(signal.action, "⚫")
-        
+        stop_loss_text = f"${signal.stop_loss:.4f}" if signal.stop_loss else "N/A"
+        target_text = f"${signal.price_target:.4f}" if signal.price_target else "N/A"
+
         return f"""
 {emoji} **HALAL TRADE SIGNAL** {emoji}
 
@@ -758,8 +773,8 @@ class NotificationManager:
 **Strategy**: {signal.strategy}
 **Risk Level**: {signal.risk_level}
 
-**Stop Loss**: ${signal.stop_loss:.4f}" if signal.stop_loss else "N/A"}
-**Target**: ${signal.price_target:.4f}" if signal.price_target else "N/A"}
+**Stop Loss**: {stop_loss_text}
+**Target**: {target_text}
 
 **Time**: {signal.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}
 
@@ -1798,8 +1813,12 @@ class AdvancedTradingStrategies:
 class AdvancedHalalScreener:
     """Enhanced halal compliance screening with real-time data integration"""
     
-    def __init__(self, config: TradingConfig):
+    def __init__(self, config: TradingConfig, gateway: Optional[DataGateway] = None):
         self.config = config
+        # Use provided gateway or default to FMPGateway with API key from environment
+        api_key = os.getenv("FMP_API_KEY", "demo")
+        self.gateway: DataGateway = gateway or FMPGateway(api_key)
+
         self.screening_cache = {}
         self.screening_history = {}
         self.cache_duration = timedelta(hours=24)
@@ -2084,26 +2103,38 @@ class AdvancedHalalScreener:
             return {}
     
     async def _fetch_financial_data(self, symbol: str) -> Dict[str, any]:
-        """Fetch real-time financial data"""
+        """Fetch financial data for a symbol via the configured data gateway."""
         try:
-            np.random.seed(hash(symbol) % 2147483647)
-            
-            financial_data = {
-                'debt_ratio': max(0, np.random.normal(0.25, 0.15)),
-                'interest_income_ratio': max(0, np.random.normal(0.02, 0.03)),
-                'liquid_assets_ratio': np.random.uniform(0.1, 0.8),
-                'prohibited_revenue_ratio': max(0, np.random.normal(0.0, 0.02)),
-                'dividend_yield': max(0, np.random.normal(0.02, 0.02)),
-                'esg_score': np.random.uniform(0.3, 0.9),
-                'profitability_score': np.random.uniform(0.2, 0.9),
-                'source': 'mock_api',
-                'quality_score': 0.8
+            statement = await self.gateway.get_statement(symbol)
+            if not statement:
+                return {}
+
+            total_debt = float(statement.get('totalDebt', 0) or 0)
+            total_assets = float(statement.get('totalAssets', 1) or 1)
+            revenue = float(statement.get('revenue', 1) or 1)
+            interest_income = float(statement.get('interestIncome', 0) or 0)
+            cash = float(statement.get('cashAndCashEquivalents', 0) or 0)
+            short_inv = float(statement.get('shortTermInvestments', 0) or 0)
+
+            debt_ratio = total_debt / total_assets if total_assets else 0.0
+            interest_income_ratio = interest_income / revenue if revenue else 0.0
+            liquid_assets_ratio = (cash + short_inv) / total_assets if total_assets else 0.0
+
+            return {
+                'debt_ratio': debt_ratio,
+                'interest_income_ratio': interest_income_ratio,
+                'liquid_assets_ratio': liquid_assets_ratio,
+                'prohibited_revenue_ratio': 0.0,
+                'dividend_yield': float(statement.get('dividendPerShare', 0) or 0),
+                'esg_score': 0.0,
+                'profitability_score': float(statement.get('grossProfit', 0) or 0) / revenue if revenue else 0.0,
+                'source': 'financial_modeling_prep',
+                'quality_score': 0.9
             }
-            return financial_data
-            
+
         except Exception as e:
             logging.error(f"Error fetching financial data for {symbol}: {e}")
-            return {'source': 'error', 'quality_score': 0.0}
+            return {}
     
     def _generate_enhanced_recommendations(self, results: Dict) -> List[str]:
         """Generate detailed recommendations based on screening results"""
@@ -3459,9 +3490,11 @@ async def run_live_trading(config_file: str, is_dry_run: bool):
                 for symbol, result in top_signals:
                     signal = result['signal']
                     emoji = "🟢" if signal.action == "buy" else "🔴"
-                    logging.info(f"{symbol:<10} {emoji} {signal.action.upper():<5} "
-                          f"{signal.confidence:.1%}/<11} {signal.strategy:<20} "
-                          f"${result['current_price']:.4f}")
+                    logging.info(
+                        f"{symbol:<10} {emoji} {signal.action.upper():<5} "
+                        f"{signal.confidence:.1%:<11} {signal.strategy:<20} "
+                        f"${result['current_price']:.4f}"
+                    )
             
             halal_assets = sum(1 for r in results.values() if r.get('is_halal', False))
             logging.info(f"\n⚖️ Risk & Compliance Summary:")
