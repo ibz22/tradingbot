@@ -10,3 +10,4 @@ prohibited features from configuration.
 
 from .data_gateway import DataGateway, FMPGateway  # noqa: F401
 from .halal_rules import load_rules  # noqa: F401
+from .advanced_screener import AdvancedHalalScreener  # noqa: F401
