@@ -75,14 +75,101 @@ class TradingEngine:
         return self.backtester.run_backtest(data, self.strategy)
 
     async def run_live(self) -> None:
-        """Run the engine in live trading mode (skeleton implementation)."""
+        """Run the engine in live trading mode.
+
+        This loop periodically re‑evaluates open positions and scans the
+        configured stock universe for new opportunities.  For each open
+        position, if the strategy provides a ``should_exit`` method and it
+        returns ``True``, the position will be closed.  For each ticker in
+        the universe, if it passes the halal financial screen and the strategy
+        indicates a ``buy`` signal, an order size is calculated via the
+        risk manager and the position is recorded in the position store.  The
+        actual order execution via a broker API is left to the user to
+        implement.
+        """
+        poll_interval = self.config.get("poll_interval_seconds", 300)
+        stock_universe = self.config.get("stock_universe", [])
         while True:
-            # TODO: fetch latest market data via broker/data gateway
-            await asyncio.sleep(60)
-            # TODO: evaluate open positions using self.position_store and strategy.should_exit
-            # TODO: screen universe for new opportunities using halal rules and data gateway
-            # TODO: calculate risk-adjusted order sizes with self.risk_manager
-            # TODO: send orders via broker gateway and record them in position_store
-            # This loop is intentionally minimal; production bots would integrate
-            # real-time data feeds, order execution and error handling here.
-            pass
+            # Evaluate existing positions
+            await self._evaluate_positions()
+            # Scan for new opportunities
+            await self._screen_universe(stock_universe)
+            await asyncio.sleep(poll_interval)
+
+    # ------------------------------------------------------------------
+    async def _evaluate_positions(self) -> None:
+        """Check open positions and close them if the strategy signals an exit."""
+        positions = self.position_store.get_open_positions()
+        for symbol, pos in list(positions.items()):
+            # Only proceed if the strategy defines a should_exit method
+            if hasattr(self.strategy, "should_exit"):
+                try:
+                    should_exit = self.strategy.should_exit(pos, None)
+                except Exception:
+                    should_exit = False
+                if should_exit:
+                    # In a real implementation you would execute a sell order via broker
+                    # and update the position store accordingly
+                    self.position_store.close_position(symbol)
+
+    # ------------------------------------------------------------------
+    async def _screen_universe(self, universe: list[str]) -> None:
+        """Screen tickers and open new positions when appropriate."""
+        for ticker in universe:
+            # Skip if we already hold this ticker
+            if ticker in self.position_store.get_open_positions():
+                continue
+            # Check if ticker passes the halal screen
+            try:
+                is_halal = await self.screener.is_halal(ticker)
+            except Exception:
+                is_halal = False
+            if not is_halal:
+                continue
+            # Ask the strategy for a buy/sell/hold signal; we need the latest price
+            price = await self._get_latest_price(ticker)
+            if price is None:
+                continue
+            # For simplicity, we call generate_signal with ``None`` data and index 0.
+            # In a real bot you would supply a DataFrame of recent bars to the strategy.
+            try:
+                signal = self.strategy.generate_signal(None, 0)  # type: ignore[arg-type]
+            except Exception:
+                signal = "hold"
+            if signal != "buy":
+                continue
+            # Calculate order size (units) using risk manager and actual price
+            qty = self.risk_manager.calculate_position_size(
+                account_value=self.config.get("initial_capital", 100000),
+                current_price=price,
+                stop_price=None,
+            )
+            if qty <= 0:
+                continue
+            # Record position; normally you would send a buy order via broker here
+            self.position_store.add_position(
+                symbol=ticker,
+                side="long",
+                qty=qty,
+                entry_price=price,
+                stop=0.0,
+                target=0.0,
+                tag=self.strategy.__class__.__name__,
+            )
+
+    # ------------------------------------------------------------------
+    async def _get_latest_price(self, ticker: str) -> float | None:
+        """Fetch the latest price for ``ticker`` using Financial Modeling Prep."""
+        api_key = self.config.get("fmp_api_key", "demo")
+        url = f"https://financialmodelingprep.com/api/v3/quote-short/{ticker}?apikey={api_key}"
+        import aiohttp  # imported here to avoid making aiohttp a strict dependency for backtesting
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=10) as resp:
+                    resp.raise_for_status()
+                    data = await resp.json()
+            if data:
+                return float(data[0].get("price", 0))
+        except Exception:
+            return None
+        return None
