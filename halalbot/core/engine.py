@@ -28,6 +28,7 @@ from .risk import RiskManager
 from ..backtest.engine import BacktestEngine
 from ..screening.data_gateway import FMPGateway, DataGateway
 from ..screening.halal_rules import load_rules
+from ..screening.advanced_screener import AdvancedHalalScreener
 
 
 class TradingEngine:
@@ -57,6 +58,17 @@ class TradingEngine:
         self.backtester = BacktestEngine(config.get("initial_capital", 100000))
         # Load halal rules for crypto screening
         self.rules = load_rules(config.get("config_path", "config.yaml"))
+
+        # Financial screener using real statements and thresholds
+        # Thresholds (max interest income percentage and debt ratio) are read
+        # from the configuration.  If not present, sensible defaults are used.
+        self.screener = AdvancedHalalScreener(
+            self.data_gateway,
+            {
+                "max_interest_pct": config.get("max_interest_pct", 0.05),
+                "max_debt_ratio": config.get("max_debt_ratio", 0.33),
+            },
+        )
 
     def run_backtest(self, data: pd.DataFrame) -> Dict[str, Any]:
         """Run a synchronous backtest on the provided price data."""
