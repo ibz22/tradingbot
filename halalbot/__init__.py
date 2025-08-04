@@ -1,16 +1,13 @@
 """
-Halalbot package initialization.
+Screening utilities for assessing halal compliance.
 
-This package provides modules for halal-compliant trading automation.  It is
-split into logical subpackages such as ``core`` for the event loop and risk
-management, ``screening`` for halal rules and data retrieval, ``backtest`` for
-historical simulation, and ``strategies`` for various trading strategies.  See
-submodules for details.
+This package contains abstractions for retrieving financial statements and
+classifying them according to Islamic finance principles.  Use
+``data_gateway`` to fetch fundamental data from external providers and
+``halal_rules`` to load lists of halal approved crypto assets and
+prohibited features from configuration.
 """
 
-__all__ = [
-    "core",
-    "screening",
-    "backtest",
-    "strategies",
-]
+from .data_gateway import DataGateway, FMPGateway  # noqa: F401
+from .halal_rules import load_rules  # noqa: F401
+from .advanced_screener import AdvancedHalalScreener  # noqa: F401
