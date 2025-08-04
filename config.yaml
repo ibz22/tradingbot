@@ -47,6 +47,10 @@ notification_channels:
   - telegram
   - email
 
+# API keys
+# Use your Financial Modeling Prep API key for price retrieval in the live engine.
+fmp_api_key: demo
+
 # Machine Learning Settings
 ml_retrain_hours: 24
 ml_min_samples: 100
