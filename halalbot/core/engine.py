@@ -39,6 +39,7 @@ class TradingEngine:
         config: Dict[str, Any],
         strategy: Any,
         data_gateway: DataGateway | None = None,
+        broker_gateway: Any | None = None,
     ) -> None:
         # Configuration dictionary loaded from YAML
         self.config = config
@@ -69,6 +70,9 @@ class TradingEngine:
                 "max_debt_ratio": config.get("max_debt_ratio", 0.33),
             },
         )
+
+        # Optional broker gateway for live order execution
+        self.broker = broker_gateway
 
     def run_backtest(self, data: pd.DataFrame) -> Dict[str, Any]:
         """Run a synchronous backtest on the provided price data."""
@@ -108,8 +112,12 @@ class TradingEngine:
                 except Exception:
                     should_exit = False
                 if should_exit:
-                    # In a real implementation you would execute a sell order via broker
-                    # and update the position store accordingly
+                    # If a broker gateway is provided, send a sell order
+                    if self.broker is not None:
+                        try:
+                            await self.broker.place_order(symbol, "sell", pos.get("qty", 0))
+                        except Exception:
+                            pass
                     self.position_store.close_position(symbol)
 
     # ------------------------------------------------------------------
@@ -146,7 +154,13 @@ class TradingEngine:
             )
             if qty <= 0:
                 continue
-            # Record position; normally you would send a buy order via broker here
+            # If a broker gateway is provided, place the order; otherwise just record
+            if self.broker is not None:
+                try:
+                    await self.broker.place_order(ticker, "buy", qty)
+                except Exception:
+                    # fall back to recording locally on failure
+                    pass
             self.position_store.add_position(
                 symbol=ticker,
                 side="long",
