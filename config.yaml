@@ -58,6 +58,9 @@ max_concurrent_assets: 10
 data_cache_hours: 1
 enable_performance_monitoring: true
 
+# Live trading settings
+poll_interval_seconds: 60
+
 # Halal screening thresholds
 max_interest_pct: 0.05  # Maximum proportion of interest income to total revenue
 max_debt_ratio: 0.33    # Maximum proportion of total debt to total assets
