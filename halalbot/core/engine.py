@@ -126,22 +126,22 @@ class TradingEngine:
                 is_halal = False
             if not is_halal:
                 continue
-            # Ask the strategy for a buy/sell/hold signal; we need the latest price
-            price = await self._get_latest_price(ticker)
-            if price is None:
+            # Retrieve recent price bars to pass into the strategy
+            bars = await self._get_recent_bars(ticker)
+            if bars is None or bars.empty:
                 continue
-            # For simplicity, we call generate_signal with ``None`` data and index 0.
-            # In a real bot you would supply a DataFrame of recent bars to the strategy.
+            # Ask the strategy for a buy/sell/hold signal using the latest bar index
             try:
-                signal = self.strategy.generate_signal(None, 0)  # type: ignore[arg-type]
+                signal = self.strategy.generate_signal(bars, len(bars) - 1)  # type: ignore[arg-type]
             except Exception:
                 signal = "hold"
             if signal != "buy":
                 continue
             # Calculate order size (units) using risk manager and actual price
+            latest_price = float(bars["close"].iloc[-1])
             qty = self.risk_manager.calculate_position_size(
                 account_value=self.config.get("initial_capital", 100000),
-                current_price=price,
+                current_price=latest_price,
                 stop_price=None,
             )
             if qty <= 0:
@@ -151,7 +151,7 @@ class TradingEngine:
                 symbol=ticker,
                 side="long",
                 qty=qty,
-                entry_price=price,
+                entry_price=latest_price,
                 stop=0.0,
                 target=0.0,
                 tag=self.strategy.__class__.__name__,
@@ -173,3 +173,31 @@ class TradingEngine:
         except Exception:
             return None
         return None
+
+    # ------------------------------------------------------------------
+    async def _get_recent_bars(self, ticker: str, interval: str = "5min", limit: int = 50):
+        """Fetch recent price bars and return a pandas DataFrame.
+
+        By default this fetches the last 50 5‑minute bars from Financial Modeling Prep.
+        If the FMP API key is not set the method returns ``None``.
+        """
+        api_key = self.config.get("fmp_api_key")
+        if not api_key:
+            return None
+        url = f"https://financialmodelingprep.com/api/v3/historical-chart/{interval}/{ticker}?apikey={api_key}&limit={limit}"
+        import aiohttp
+        import pandas as pd  # imported here to avoid requiring pandas for users who only backtest
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=10) as resp:
+                    resp.raise_for_status()
+                    data = await resp.json()
+            if not data:
+                return None
+            df = pd.DataFrame(data)
+            # Ensure correct ordering (oldest first) and proper column names
+            df = df.rename(columns={"date": "datetime"}).sort_values("datetime")
+            df["close"] = df["close"].astype(float)
+            return df
+        except Exception:
+            return None
