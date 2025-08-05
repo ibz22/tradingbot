@@ -10,7 +10,7 @@ percentage and debt ratio can be supplied via the configuration dictionary.
 Example
 -------
     from halalbot.screening.data_gateway import FMPGateway
-    from advanced_screener import AdvancedHalalScreener
+    from halalbot.screening.advanced_screener import AdvancedHalalScreener
 
     gateway = FMPGateway(api_key="demo")
     cfg = {"max_interest_pct": 0.05, "max_debt_ratio": 0.33}
