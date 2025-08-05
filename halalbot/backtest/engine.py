@@ -59,8 +59,8 @@ class BacktestEngine:
             Starting equity for the backtest.
         slippage_model : str, optional
             The slippage model to use.  Supported values:
-            - ``"fixed_pct"``: ``slippage_value`` is interpreted as a proportion (0.0005 = 5 bps).
-            - ``"bps"``: ``slippage_value`` is interpreted as basis points (e.g. 5 = 5 bps).
+            - ``"fixed_pct"``: ``slippage_value`` is interpreted as a proportion (0.0005 = 5 bps).
+            - ``"bps"``: ``slippage_value`` is interpreted as basis points (e.g. 5 = 5 bps).
         slippage_value : float, optional
             The magnitude of slippage according to the chosen model.
         fee_per_trade : float, optional
