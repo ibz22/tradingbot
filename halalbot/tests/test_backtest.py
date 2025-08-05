@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 from halalbot.backtest.engine import BacktestEngine
 
 
