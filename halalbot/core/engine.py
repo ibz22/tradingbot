@@ -40,6 +40,7 @@ class TradingEngine:
         strategy: Any,
         data_gateway: DataGateway | None = None,
         broker_gateway: Any | None = None,
+        order_blotter: Any | None = None,
     ) -> None:
         # Configuration dictionary loaded from YAML
         self.config = config
@@ -73,6 +74,8 @@ class TradingEngine:
 
         # Optional broker gateway for live order execution
         self.broker = broker_gateway
+        # Optional order blotter for recording orders
+        self.order_blotter = order_blotter
 
     def run_backtest(self, data: pd.DataFrame) -> Dict[str, Any]:
         """Run a synchronous backtest on the provided price data."""
@@ -118,6 +121,15 @@ class TradingEngine:
                             await self.broker.place_order(symbol, "sell", pos.get("qty", 0))
                         except Exception:
                             pass
+                    # Log the sell order to the blotter
+                    if self.order_blotter is not None:
+                        self.order_blotter.add_order(
+                            symbol,
+                            "sell",
+                            pos.get("qty", 0),
+                            pos.get("entry_price", 0),
+                            status="submitted" if self.broker is not None else "simulated",
+                        )
                     self.position_store.close_position(symbol)
 
     # ------------------------------------------------------------------
@@ -155,12 +167,24 @@ class TradingEngine:
             if qty <= 0:
                 continue
             # If a broker gateway is provided, place the order; otherwise just record
+            order_status = "simulated"
             if self.broker is not None:
                 try:
                     await self.broker.place_order(ticker, "buy", qty)
+                    order_status = "submitted"
                 except Exception:
                     # fall back to recording locally on failure
-                    pass
+                    order_status = "rejected"
+            # Record the order in the blotter if provided
+            if self.order_blotter is not None:
+                self.order_blotter.add_order(
+                    ticker,
+                    "buy",
+                    qty,
+                    latest_price,
+                    status=order_status,
+                )
+            # Record position locally
             self.position_store.add_position(
                 symbol=ticker,
                 side="long",
