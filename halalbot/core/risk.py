@@ -31,13 +31,7 @@ class RiskManager:
         current_price: float,
         stop_price: Optional[float],
     ) -> float:
-        """Return the number of units to trade based on risk constraints.
-
-        The position sizing algorithm uses the dollar risk per trade (account
-        value multiplied by ``max_position_risk``) divided by the per-share risk
-        (the distance between the entry price and the stop loss).  If no stop
-        loss is provided the per-share risk defaults to the asset price.
-        """
+        """Return the number of units to trade based on risk constraints."""
         if account_value <= 0 or current_price <= 0:
             return 0.0
         # Dollar risk allowed for this trade
@@ -55,14 +49,7 @@ class RiskManager:
         return min(raw_size, max_size)
 
     def calculate_portfolio_risk(self, positions: Dict[str, Dict]) -> Dict[str, float]:
-        """Aggregate simple risk metrics across current positions.
-
-        For each position we assume that the dollar value at risk is the
-        quantity multiplied by the entry price multiplied by ``max_position_risk``.  The
-        concentration risk is measured as the sum of squared weights.  This
-        implementation is deliberately straightforward; more sophisticated
-        estimators (e.g. VaR, CVaR or correlations) can be plugged in later.
-        """
+        """Aggregate simple risk metrics across current positions."""
         if not positions:
             return {
                 "portfolio_value": 0.0,

@@ -82,18 +82,7 @@ class TradingEngine:
         return self.backtester.run_backtest(data, self.strategy)
 
     async def run_live(self) -> None:
-        """Run the engine in live trading mode.
-
-        This loop periodically re‑evaluates open positions and scans the
-        configured stock universe for new opportunities.  For each open
-        position, if the strategy provides a ``should_exit`` method and it
-        returns ``True``, the position will be closed.  For each ticker in
-        the universe, if it passes the halal financial screen and the strategy
-        indicates a ``buy`` signal, an order size is calculated via the
-        risk manager and the position is recorded in the position store.  The
-        actual order execution via a broker API is left to the user to
-        implement.
-        """
+        """Run the engine in live trading mode."""
         poll_interval = self.config.get("poll_interval_seconds", 300)
         stock_universe = self.config.get("stock_universe", [])
         while True:
@@ -214,11 +203,7 @@ class TradingEngine:
 
     # ------------------------------------------------------------------
     async def _get_recent_bars(self, ticker: str, interval: str = "5min", limit: int = 50):
-        """Fetch recent price bars and return a pandas DataFrame.
-
-        By default this fetches the last 50 5‑minute bars from Financial Modeling Prep.
-        If the FMP API key is not set the method returns ``None``.
-        """
+        """Fetch recent price bars and return a pandas DataFrame."""
         api_key = self.config.get("fmp_api_key")
         if not api_key:
             return None
