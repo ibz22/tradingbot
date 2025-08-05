@@ -42,16 +42,33 @@ class Trade:
 
 
 class BacktestEngine:
-    """A simple event-driven backtesting engine."""
+    """A simple event-driven backtesting engine with configurable slippage models."""
 
     def __init__(
         self,
         initial_capital: float,
-        slippage_pct: float = 0.0005,
+        *,
+        slippage_model: str = "fixed_pct",
+        slippage_value: float = 0.0005,
         fee_per_trade: float = 0.0,
     ) -> None:
+        """
+        Parameters
+        ----------
+        initial_capital : float
+            Starting equity for the backtest.
+        slippage_model : str, optional
+            The slippage model to use.  Supported values:
+            - ``"fixed_pct"``: ``slippage_value`` is interpreted as a proportion (0.0005 = 5 bps).
+            - ``"bps"``: ``slippage_value`` is interpreted as basis points (e.g. 5 = 5 bps).
+        slippage_value : float, optional
+            The magnitude of slippage according to the chosen model.
+        fee_per_trade : float, optional
+            Flat commission applied to each buy or sell order.
+        """
         self.initial_capital = initial_capital
-        self.slippage_pct = slippage_pct
+        self.slippage_model = slippage_model
+        self.slippage_value = slippage_value
         self.fee_per_trade = fee_per_trade
 
     def run_backtest(
@@ -82,6 +99,12 @@ class BacktestEngine:
         # Precompute whether data index is datetime for metrics scaling
         is_datetime_index = isinstance(data.index, pd.DatetimeIndex)
 
+        # Determine slippage percentage based on selected model
+        if self.slippage_model == "bps":
+            slippage_pct = self.slippage_value / 10000.0
+        else:  # default fixed_pct
+            slippage_pct = self.slippage_value
+
         for i in range(len(data)):
             price = float(data["close"].iloc[i])
             signal = "hold"
@@ -93,7 +116,7 @@ class BacktestEngine:
             # Execute orders
             if signal == "buy" and position_size == 0:
                 # Determine how many units we can buy
-                unit_price = price * (1 + self.slippage_pct)
+                unit_price = price * (1 + slippage_pct)
                 qty = (capital - self.fee_per_trade) / unit_price
                 if qty > 0:
                     position_size = qty
@@ -102,7 +125,7 @@ class BacktestEngine:
                         Trade(timestamp=data.index[i], action="buy", price=unit_price, quantity=qty)
                     )
             elif signal == "sell" and position_size > 0:
-                unit_price = price * (1 - self.slippage_pct)
+                unit_price = price * (1 - slippage_pct)
                 capital += position_size * unit_price - self.fee_per_trade
                 blotter.append(
                     Trade(timestamp=data.index[i], action="sell", price=unit_price, quantity=position_size)
@@ -115,7 +138,7 @@ class BacktestEngine:
         # Close any open position at the end
         if position_size > 0:
             price = float(data["close"].iloc[-1])
-            unit_price = price * (1 - self.slippage_pct)
+            unit_price = price * (1 - slippage_pct)
             capital += position_size * unit_price - self.fee_per_trade
             blotter.append(
                 Trade(timestamp=data.index[-1], action="sell", price=unit_price, quantity=position_size)
