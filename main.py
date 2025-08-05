@@ -27,12 +27,13 @@ import pandas as pd
 # Import the cleaned halalbot package
 from halalbot.core.engine import TradingEngine
 from halalbot.core.risk import RiskManager
+from halalbot.core.trade_executor import EnhancedTradeExecutor
 from halalbot.screening.advanced_screener import AdvancedHalalScreener
 from halalbot.screening.data_gateway import FMPGateway
 from halalbot.screening.halal_rules import load_rules
 from halalbot.strategies.momentum import MomentumStrategy
 from halalbot.strategies.mean_reversion import MeanReversionStrategy
-from halalbot.broker_gateway import AlpacaBrokerGateway
+from halalbot.broker_gateway import EnhancedAlpacaBrokerGateway, MockBrokerGateway
 
 # Import configuration and utilities from the original enhanced system
 try:
