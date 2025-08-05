@@ -25,6 +25,8 @@ import pandas as pd
 
 from .position_store import PositionStore
 from .risk import RiskManager
+from .trade_executor import EnhancedTradeExecutor
+from .order_manager import OrderManager
 from ..backtest.engine import BacktestEngine
 from ..screening.data_gateway import FMPGateway, DataGateway
 from ..screening.halal_rules import load_rules
@@ -72,10 +74,13 @@ class TradingEngine:
             },
         )
 
-        # Optional broker gateway for live order execution
-        self.broker = broker_gateway
-        # Optional order blotter for recording orders
-        self.order_blotter = order_blotter
+        # Enhanced trade executor with order management
+        self.trade_executor = EnhancedTradeExecutor(
+            broker_gateway=broker_gateway,
+            order_blotter=order_blotter,
+            risk_manager=self.risk_manager,
+            is_dry_run=(broker_gateway is None)
+        )
 
     def run_backtest(self, data: pd.DataFrame) -> Dict[str, Any]:
         """Run a synchronous backtest on the provided price data."""
@@ -104,22 +109,34 @@ class TradingEngine:
                 except Exception:
                     should_exit = False
                 if should_exit:
-                    # If a broker gateway is provided, send a sell order
-                    if self.broker is not None:
-                        try:
-                            await self.broker.place_order(symbol, "sell", pos.get("qty", 0))
-                        except Exception:
-                            pass
-                    # Log the sell order to the blotter
-                    if self.order_blotter is not None:
-                        self.order_blotter.add_order(
-                            symbol,
-                            "sell",
-                            pos.get("qty", 0),
-                            pos.get("entry_price", 0),
-                            status="submitted" if self.broker is not None else "simulated",
+                    # Execute sell order using enhanced trade executor
+                    try:
+                        class MockSignal:
+                            def __init__(self, action, price_target=None, stop_loss=None, confidence=0.5):
+                                self.action = action
+                                self.price_target = price_target
+                                self.stop_loss = stop_loss
+                                self.confidence = confidence
+                        
+                        current_price = pos.get("entry_price", 100.0)  # Fallback price
+                        mock_signal = MockSignal("sell", current_price * 0.98, current_price * 1.05)
+                        
+                        execution_result = await self.trade_executor.execute_trade(
+                            symbol=symbol,
+                            signal=mock_signal,
+                            position_size=pos.get("qty", 0),
+                            is_crypto=False,
+                            strategy_name="exit_signal"
                         )
-                    self.position_store.close_position(symbol)
+                        
+                        if execution_result and execution_result.success:
+                            self.position_store.close_position(symbol)
+                            logging.info(f"✅ Position closed via trade executor: {symbol}")
+                        else:
+                            logging.warning(f"⚠️ Failed to close position for {symbol}: {execution_result.error_message if execution_result else 'Unknown error'}")
+                            
+                    except Exception as e:
+                        logging.error(f"❌ Error closing position for {symbol}: {e}")
 
     # ------------------------------------------------------------------
     async def _screen_universe(self, universe: list[str]) -> None:
@@ -155,34 +172,44 @@ class TradingEngine:
             )
             if qty <= 0:
                 continue
-            # If a broker gateway is provided, place the order; otherwise just record
-            order_status = "simulated"
-            if self.broker is not None:
-                try:
-                    await self.broker.place_order(ticker, "buy", qty)
-                    order_status = "submitted"
-                except Exception:
-                    # fall back to recording locally on failure
-                    order_status = "rejected"
-            # Record the order in the blotter if provided
-            if self.order_blotter is not None:
-                self.order_blotter.add_order(
-                    ticker,
-                    "buy",
-                    qty,
-                    latest_price,
-                    status=order_status,
+            
+            # Execute trade using enhanced trade executor
+            try:
+                # Create a mock signal object with the required attributes
+                class MockSignal:
+                    def __init__(self, action, price_target=None, stop_loss=None, confidence=0.5):
+                        self.action = action
+                        self.price_target = price_target
+                        self.stop_loss = stop_loss
+                        self.confidence = confidence
+                
+                mock_signal = MockSignal("buy", latest_price * 1.02, latest_price * 0.98)
+                
+                execution_result = await self.trade_executor.execute_trade(
+                    symbol=ticker,
+                    signal=mock_signal,
+                    position_size=qty,
+                    is_crypto=False,
+                    strategy_name=self.strategy.__class__.__name__
                 )
-            # Record position locally
-            self.position_store.add_position(
-                symbol=ticker,
-                side="long",
-                qty=qty,
-                entry_price=latest_price,
-                stop=0.0,
-                target=0.0,
-                tag=self.strategy.__class__.__name__,
-            )
+                
+                if execution_result and execution_result.success:
+                    # Record position locally
+                    self.position_store.add_position(
+                        symbol=ticker,
+                        side="long",
+                        qty=execution_result.filled_quantity,
+                        entry_price=execution_result.avg_fill_price or latest_price,
+                        stop=latest_price * 0.98,
+                        target=latest_price * 1.02,
+                        tag=self.strategy.__class__.__name__,
+                    )
+                    logging.info(f"✅ Trade executed and position recorded: {ticker}")
+                else:
+                    logging.warning(f"⚠️ Trade execution failed for {ticker}: {execution_result.error_message if execution_result else 'Unknown error'}")
+                    
+            except Exception as e:
+                logging.error(f"❌ Trade execution error for {ticker}: {e}")
 
     # ------------------------------------------------------------------
     async def _get_latest_price(self, ticker: str) -> float | None:
