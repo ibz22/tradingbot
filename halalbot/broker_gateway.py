@@ -3,13 +3,13 @@ Simple broker gateway for paper trading using Alpaca.
 
 This gateway demonstrates how you could wrap a broker API to place orders and
 query account information.  It uses the `alpaca-py` SDK to send
-market orders to Alpaca’s paper trading endpoint.  To use this class you
+market orders to Alpaca's paper trading endpoint.  To use this class you
 need to set the environment variables ``ALPACA_API_KEY`` and
 ``ALPACA_SECRET_KEY`` or pass them explicitly when constructing the gateway.
 
 Example
 -------
-    from halalbot.gateway.broker_gateway import AlpacaBrokerGateway
+    from halalbot.broker_gateway import AlpacaBrokerGateway
 
     broker = AlpacaBrokerGateway()
     await broker.place_order("AAPL", "buy", 10)
