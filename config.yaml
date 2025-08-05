@@ -41,7 +41,7 @@ crypto_universe:
   - AVAX/USDT
   - ALGO/USDT
 
-# Notification Settings
+# Notification Settings  
 enable_notifications: true
 notification_channels:
   - telegram
