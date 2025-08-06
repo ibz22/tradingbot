@@ -264,8 +264,7 @@ async def get_bot_performance(bot_id: int, hours: int = 24, db: Session = Depend
 
 # Export Endpoints
 @app.post("/api/bots/{bot_id}/export")
-async def export_bot_results(bot_id: int, format: str = "csv", 
-                           background_tasks: BackgroundTasks):
+async def export_bot_results(bot_id: int, background_tasks: BackgroundTasks, format: str = "csv"):
     """Export bot results to CSV or Google Sheets"""
     try:
         if format not in ["csv", "google_sheets"]:
@@ -348,7 +347,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 "data": summary,
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }))
-            await asyncio.sleep(30)  # Update every 30 seconds
+            await asyncio.sleep(5)  # More frequent updates for better responsiveness
             
     except WebSocketDisconnect:
         websocket_manager.disconnect(websocket)
