@@ -1,0 +1,102 @@
+# Docker Compose for Halal Trading Bot GUI
+version: '3.8'
+
+services:
+  # Main GUI API Server
+  gui-server:
+    build:
+      context: ..
+      dockerfile: gui/Dockerfile
+    container_name: halal-trading-gui
+    ports:
+      - "3002:3002"
+    environment:
+      - DATABASE_URL=sqlite:///./data/trading_bots.db
+      - PORT=3002
+      - HOST=0.0.0.0
+    env_file:
+      - ../.env
+    volumes:
+      - ../logs:/app/logs
+      - ../configs:/app/configs
+      - ../exports:/app/exports
+      - ../data:/app/data
+      - ../.env:/app/.env
+    restart: unless-stopped
+    networks:
+      - trading-network
+    depends_on:
+      - redis
+
+  # Redis for caching and real-time features
+  redis:
+    image: redis:7-alpine
+    container_name: halal-trading-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - trading-network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: halal-trading-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    restart: unless-stopped
+    networks:
+      - trading-network
+    depends_on:
+      - gui-server
+
+  # Performance monitoring (optional)
+  prometheus:
+    image: prom/prometheus
+    container_name: halal-trading-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - trading-network
+
+  # Grafana for advanced dashboards (optional)
+  grafana:
+    image: grafana/grafana
+    container_name: halal-trading-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+    networks:
+      - trading-network
+
+networks:
+  trading-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
