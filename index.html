@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕌 Halal Trading Bot Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card { 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            margin-bottom: 20px;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        .btn-islamic {
+            background: linear-gradient(45deg, #2E8B57, #228B22);
+            border: none;
+            color: white;
+        }
+        .btn-islamic:hover {
+            background: linear-gradient(45deg, #228B22, #2E8B57);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <h3>🕌 Halal Trading Bot Dashboard</h3>
+            </a>
+            <span class="navbar-text">
+                <span class="badge bg-success">✅ GitHub Pages</span>
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Status Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h5>🤖 Total Bots</h5>
+                        <h2 id="total-bots">3</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h5>🟢 Active</h5>
+                        <h2 id="active-bots">1</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5>💰 Total Equity</h5>
+                        <h2 id="total-equity">$125,450</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center">
+                        <h5>📈 Return</h5>
+                        <h2 id="total-return">+12.3%</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bot Management -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>🤖 Bot Instances</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Bot Name</th>
+                                        <th>Status</th>
+                                        <th>Strategy</th>
+                                        <th>Equity</th>
+                                        <th>Return</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bots-table">
+                                    <tr>
+                                        <td>🌟 Conservative Bot</td>
+                                        <td><span class="badge bg-success">Running</span></td>
+                                        <td>Mean Reversion</td>
+                                        <td>$45,200</td>
+                                        <td class="text-success">+8.5%</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning">⏸️ Pause</button>
+                                            <button class="btn btn-sm btn-info">📊 View</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>⚡ Aggressive Bot</td>
+                                        <td><span class="badge bg-secondary">Stopped</span></td>
+                                        <td>Momentum</td>
+                                        <td>$35,100</td>
+                                        <td class="text-success">+15.2%</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success">▶️ Start</button>
+                                            <button class="btn btn-sm btn-info">📊 View</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>🔄 Balanced Bot</td>
+                                        <td><span class="badge bg-secondary">Stopped</span></td>
+                                        <td>Mixed Strategy</td>
+                                        <td>$45,150</td>
+                                        <td class="text-success">+11.8%</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-success">▶️ Start</button>
+                                            <button class="btn btn-sm btn-info">📊 View</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5>⚡ Quick Actions</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-islamic">➕ Create New Bot</button>
+                            <button type="button" class="btn btn-outline-secondary">🔄 Refresh Data</button>
+                            <button type="button" class="btn btn-outline-info">📊 Export Results</button>
+                            <button type="button" class="btn btn-outline-success">⚙️ Settings</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Info -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>📈 Recent Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush" id="recent-activity">
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex justify-content-between">
+                                    <small><strong>Conservative Bot</strong> <span class="badge bg-success">BUY</span></small>
+                                    <small class="text-muted">2 min ago</small>
+                                </div>
+                                <small class="text-muted">AAPL - 50 shares @ $173.50</small>
+                            </div>
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex justify-content-between">
+                                    <small><strong>Conservative Bot</strong> <span class="badge bg-danger">SELL</span></small>
+                                    <small class="text-muted">15 min ago</small>
+                                </div>
+                                <small class="text-muted">MSFT - 30 shares @ $334.20</small>
+                            </div>
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex justify-content-between">
+                                    <small><strong>Balanced Bot</strong> <span class="badge bg-success">BUY</span></small>
+                                    <small class="text-muted">1 hour ago</small>
+                                </div>
+                                <small class="text-muted">GOOGL - 15 shares @ $145.80</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5>🖥️ System Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="badge bg-success w-100 mb-2">✅ GitHub Pages</div>
+                                <small class="text-muted">Web Interface</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="badge bg-info w-100 mb-2">🟢 DigitalOcean</div>
+                                <small class="text-muted">Bot Server</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="small text-muted">
+                            <div>📍 Server: Sydney, Australia</div>
+                            <div>⏱️ Last Updated: <span id="last-updated">Just now</span></div>
+                            <div>🔄 Auto-refresh: Disabled</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Islamic Trading Compliance -->
+                <div class="card border-success">
+                    <div class="card-header bg-light">
+                        <h5 class="text-success">🕌 Islamic Compliance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="small">
+                            <div class="text-success">✅ No interest-based transactions</div>
+                            <div class="text-success">✅ Sharia-compliant securities only</div>
+                            <div class="text-success">✅ No excessive speculation (Gharar)</div>
+                            <div class="text-success">✅ Ethical investment principles</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 mt-5">
+        <div class="container">
+            <small class="text-light">
+                🕌 Halal Trading Bot Dashboard • GitHub Pages • 
+                <a href="https://github.com/ibz22/tradingbot" class="text-light">View Source Code</a>
+            </small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update timestamp
+        setInterval(() => {
+            document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+        }, 60000);
+
+        // Simple interactivity
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.textContent.includes('Start')) {
+                    this.className = 'btn btn-sm btn-warning';
+                    this.textContent = '⏸️ Pause';
+                } else if (this.textContent.includes('Pause')) {
+                    this.className = 'btn btn-sm btn-success';
+                    this.textContent = '▶️ Start';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
