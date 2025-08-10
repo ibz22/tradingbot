@@ -1,10 +1,14 @@
 """
-Token Extractor - Intelligent Token Discovery for Solana Trading Bot
-===================================================================
+Enhanced Token Discovery System - Complete Token Discovery & Validation Pipeline
+================================================================================
 
-Advanced token address and symbol extraction from news articles, social media,
-and other text sources. Uses pattern matching, blockchain validation, and AI
-to identify tradeable Solana tokens.
+Advanced token discovery system integrating:
+- Intelligent token extraction from news and social media
+- Real-time token validation and legitimacy verification
+- Comprehensive rug pull detection and risk assessment
+- Liquidity analysis and trading feasibility evaluation
+- Integration with sentiment analysis for confidence scoring
+- Complete validation pipeline for discovered tokens
 """
 
 import asyncio
@@ -27,8 +31,52 @@ from ..utils.checkpoint import load_checkpoint, save_checkpoint
 
 
 @dataclass
+class ValidatedToken:
+    """Represents a fully validated token with comprehensive analysis"""
+    symbol: str
+    address: Optional[str] = None
+    name: Optional[str] = None
+    source_text: str = ""
+    extraction_confidence: float = 0.0
+    context: str = ""
+    extraction_method: str = ""
+    
+    # Validation results
+    is_validated: bool = False
+    validation_status: str = "unknown"  # from TokenValidator
+    security_score: float = 0.0
+    
+    # Liquidity analysis
+    liquidity_tier: str = "unknown"
+    total_liquidity_usd: float = 0.0
+    trading_feasibility: str = "unknown"
+    
+    # Rug pull analysis
+    rug_risk_level: str = "unknown"
+    rug_detection_status: str = "unknown"
+    overall_risk_score: float = 1.0  # Default to high risk
+    
+    # Market data
+    market_cap: Optional[float] = None
+    volume_24h: Optional[float] = None
+    price: Optional[float] = None
+    
+    # Final assessment
+    trading_recommendation: str = "avoid"
+    final_confidence: float = 0.0
+    warnings: List[str] = None
+    last_validated: Optional[datetime] = None
+    
+    def __post_init__(self):
+        if self.warnings is None:
+            self.warnings = []
+        if self.last_validated is None:
+            self.last_validated = datetime.now()
+
+
+@dataclass  
 class ExtractedToken:
-    """Represents an extracted token with metadata"""
+    """Represents an extracted token with metadata (legacy for compatibility)"""
     symbol: str
     address: Optional[str] = None
     name: Optional[str] = None
@@ -112,15 +160,24 @@ class TokenExtractor:
     
     def __init__(self, 
                  solana_client: Optional[object] = None,
+                 token_validator: Optional[object] = None,
+                 liquidity_analyzer: Optional[object] = None,  
+                 rug_detector: Optional[object] = None,
                  checkpoint_file: str = "data/token_extractor.json"):
         """
-        Initialize TokenExtractor
+        Initialize Enhanced Token Discovery System
         
         Args:
             solana_client: Solana client for address validation
+            token_validator: Token validator for legitimacy verification
+            liquidity_analyzer: Liquidity analyzer for trading feasibility
+            rug_detector: Rug pull detector for risk assessment
             checkpoint_file: File to store extraction state
         """
         self.solana_client = solana_client
+        self.token_validator = token_validator
+        self.liquidity_analyzer = liquidity_analyzer
+        self.rug_detector = rug_detector
         self.checkpoint_file = checkpoint_file
         self.logger = logging.getLogger(__name__)
         
