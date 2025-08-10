@@ -1,0 +1,22 @@
+# Phase 3 Additional Requirements
+# Add these to your existing requirements.txt
+
+# News & Social Media APIs
+newsapi-python>=0.2.6
+praw>=7.7.1
+python-telegram-bot>=20.7
+tweepy>=4.14.0
+
+# Sentiment Analysis
+textblob>=0.17.1
+vaderSentiment>=3.3.2
+openai>=1.3.0
+
+# Web Scraping & Data Processing  
+beautifulsoup4>=4.12.2
+requests>=2.31.0
+feedparser>=6.0.10
+
+# Additional Utilities
+python-dateutil>=2.8.2
+pytz>=2023.3
