@@ -431,6 +431,348 @@ class TokenExtractor:
         
         return extracted_tokens[:20]  # Return top 20 tokens
     
+    async def validate_extracted_token(self, token: ExtractedToken, social_data: Optional[Dict] = None) -> ValidatedToken:
+        """
+        Perform comprehensive validation on an extracted token
+        
+        Args:
+            token: Extracted token to validate
+            social_data: Optional social sentiment data for correlation analysis
+            
+        Returns:
+            Fully validated token with comprehensive analysis
+        """
+        self.logger.info(f"Validating extracted token: {token.symbol}")
+        
+        # Initialize validated token with extracted data
+        validated_token = ValidatedToken(
+            symbol=token.symbol,
+            address=token.address,
+            name=token.name,
+            source_text=token.source_text,
+            extraction_confidence=token.confidence,
+            context=token.context,
+            extraction_method=token.extraction_method,
+        )
+        
+        warnings = []
+        
+        try:
+            # Step 1: Token legitimacy validation
+            if self.token_validator and token.address:
+                try:
+                    validation_result = await self.token_validator.validate_token(token.address)
+                    
+                    validated_token.is_validated = True
+                    validated_token.validation_status = validation_result.status.value
+                    
+                    if validation_result.security_analysis:
+                        validated_token.security_score = validation_result.security_analysis.security_score
+                    
+                    if validation_result.metadata:
+                        validated_token.name = validated_token.name or validation_result.metadata.name
+                        validated_token.address = validated_token.address or validation_result.metadata.address
+                    
+                    # Collect validation warnings
+                    if validation_result.validation_warnings:
+                        warnings.extend(validation_result.validation_warnings)
+                    
+                    self.logger.info(f"Token validation complete: {validation_result.status.value}")
+                    
+                except Exception as e:
+                    self.logger.error(f"Token validation failed: {e}")
+                    warnings.append(f"Token validation failed: {str(e)}")
+                    validated_token.validation_status = "failed"
+            else:
+                warnings.append("Token validation not available")
+            
+            # Step 2: Liquidity analysis
+            if self.liquidity_analyzer and token.address:
+                try:
+                    liquidity_metrics = await self.liquidity_analyzer.analyze_token_liquidity(token.address)
+                    
+                    validated_token.liquidity_tier = liquidity_metrics.liquidity_tier.value
+                    validated_token.total_liquidity_usd = liquidity_metrics.total_liquidity_usd
+                    
+                    # Generate trading recommendation
+                    trading_rec = self.liquidity_analyzer.generate_trading_recommendation(liquidity_metrics)
+                    validated_token.trading_feasibility = trading_rec.feasibility.value
+                    
+                    # Update market data
+                    if liquidity_metrics.best_pools:
+                        best_pool = liquidity_metrics.best_pools[0]
+                        validated_token.volume_24h = best_pool.volume_24h
+                        validated_token.price = best_pool.price
+                        validated_token.market_cap = best_pool.tvl_usd * 10  # Rough estimate
+                    
+                    # Collect liquidity warnings
+                    warnings.extend(trading_rec.warnings)
+                    
+                    self.logger.info(f"Liquidity analysis complete: {liquidity_metrics.liquidity_tier.value}")
+                    
+                except Exception as e:
+                    self.logger.error(f"Liquidity analysis failed: {e}")
+                    warnings.append(f"Liquidity analysis failed: {str(e)}")
+                    validated_token.liquidity_tier = "unknown"
+            else:
+                warnings.append("Liquidity analysis not available")
+            
+            # Step 3: Rug pull risk analysis
+            if self.rug_detector and token.address:
+                try:
+                    rug_analysis = await self.rug_detector.analyze_rug_risk(token.address, social_data)
+                    
+                    validated_token.rug_risk_level = rug_analysis.risk_level.name
+                    validated_token.rug_detection_status = rug_analysis.detection_status.value
+                    validated_token.overall_risk_score = rug_analysis.overall_risk_score
+                    
+                    # Collect rug pull warnings
+                    warnings.extend(rug_analysis.red_flags)
+                    
+                    self.logger.info(f"Rug pull analysis complete: {rug_analysis.detection_status.value}")
+                    
+                except Exception as e:
+                    self.logger.error(f"Rug pull analysis failed: {e}")
+                    warnings.append(f"Rug pull analysis failed: {str(e)}")
+                    validated_token.rug_risk_level = "VERY_HIGH"
+                    validated_token.rug_detection_status = "analysis_failed"
+            else:
+                warnings.append("Rug pull analysis not available")
+                validated_token.overall_risk_score = 0.8  # High risk without analysis
+            
+            # Step 4: Generate final trading recommendation
+            validated_token.trading_recommendation = self._generate_final_recommendation(validated_token)
+            
+            # Step 5: Calculate final confidence score
+            validated_token.final_confidence = self._calculate_final_confidence(validated_token)
+            
+            # Step 6: Set warnings
+            validated_token.warnings = warnings[:10]  # Limit to top 10 warnings
+            
+            validated_token.last_validated = datetime.now()
+            
+            self.logger.info(f"Token validation pipeline complete for {token.symbol}: {validated_token.trading_recommendation}")
+            
+            return validated_token
+            
+        except Exception as e:
+            self.logger.error(f"Error in validation pipeline for {token.symbol}: {e}")
+            
+            # Return failed validation
+            validated_token.warnings = [f"Validation pipeline failed: {str(e)}"]
+            validated_token.trading_recommendation = "avoid"
+            validated_token.final_confidence = 0.0
+            validated_token.overall_risk_score = 1.0
+            
+            return validated_token
+    
+    def _generate_final_recommendation(self, token: ValidatedToken) -> str:
+        """
+        Generate final trading recommendation based on all analyses
+        
+        Args:
+            token: Validated token with all analysis results
+            
+        Returns:
+            Final trading recommendation
+        """
+        # High-level risk check
+        if token.rug_detection_status in ["likely_rug", "confirmed_rug"]:
+            return "avoid_rug_detected"
+        elif token.rug_detection_status == "high_risk":
+            return "avoid_high_risk"
+        elif token.validation_status == "invalid":
+            return "avoid_invalid_token"
+        
+        # Risk-based assessment
+        risk_score = token.overall_risk_score
+        
+        if risk_score >= 0.8:
+            return "avoid_very_high_risk"
+        elif risk_score >= 0.6:
+            return "avoid_high_risk"
+        elif risk_score >= 0.4:
+            # Check liquidity for moderate risk tokens
+            if token.liquidity_tier in ["very_high", "high"]:
+                return "caution_moderate_risk_good_liquidity"
+            elif token.liquidity_tier == "moderate":
+                return "caution_moderate_risk"
+            else:
+                return "avoid_poor_liquidity"
+        elif risk_score >= 0.2:
+            # Low risk - check liquidity and feasibility
+            if token.trading_feasibility in ["excellent", "good"]:
+                return "trade_low_risk_good_liquidity"
+            elif token.trading_feasibility == "fair":
+                return "trade_low_risk_fair_liquidity"
+            else:
+                return "caution_poor_liquidity"
+        else:
+            # Very low risk - generally good to trade
+            if token.trading_feasibility in ["excellent", "good", "fair"]:
+                return "trade_very_low_risk"
+            else:
+                return "caution_liquidity_check_needed"
+    
+    def _calculate_final_confidence(self, token: ValidatedToken) -> float:
+        """
+        Calculate final confidence score based on all analyses
+        
+        Args:
+            token: Validated token
+            
+        Returns:
+            Final confidence score (0.0 to 1.0)
+        """
+        confidence = 0.0
+        
+        # Base extraction confidence
+        confidence += token.extraction_confidence * 0.2
+        
+        # Validation confidence
+        if token.is_validated:
+            confidence += 0.2
+            if token.validation_status == "verified":
+                confidence += 0.1
+        
+        # Security score contribution
+        confidence += token.security_score * 0.2
+        
+        # Liquidity analysis contribution
+        if token.liquidity_tier != "unknown":
+            confidence += 0.1
+            liquidity_bonus = {
+                "very_high": 0.2,
+                "high": 0.15,
+                "moderate": 0.1,
+                "low": 0.05,
+                "very_low": 0.0
+            }
+            confidence += liquidity_bonus.get(token.liquidity_tier, 0.0)
+        
+        # Rug analysis contribution
+        if token.rug_detection_status != "unknown":
+            confidence += 0.1
+            # Bonus for completed analysis
+            if token.rug_detection_status not in ["analysis_failed", "unknown"]:
+                confidence += 0.05
+        
+        # Penalty for warnings
+        warning_penalty = min(len(token.warnings) * 0.02, 0.2)  # Max 20% penalty
+        confidence -= warning_penalty
+        
+        return max(0.0, min(confidence, 1.0))
+    
+    async def discover_and_validate_tokens(self, 
+                                         text: str, 
+                                         source: str = "unknown",
+                                         social_data: Optional[Dict] = None,
+                                         validation_enabled: bool = True) -> List[ValidatedToken]:
+        """
+        Complete token discovery and validation pipeline
+        
+        Args:
+            text: Text to extract tokens from
+            source: Source of the text
+            social_data: Optional social sentiment data
+            validation_enabled: Whether to run full validation pipeline
+            
+        Returns:
+            List of fully validated tokens
+        """
+        self.logger.info(f"Starting token discovery and validation for source: {source}")
+        
+        # Step 1: Extract tokens
+        extracted_tokens = self.extract_from_text(text, source)
+        
+        if not extracted_tokens:
+            self.logger.info("No tokens extracted")
+            return []
+        
+        # Step 2: Validate tokens if enabled
+        if validation_enabled:
+            validated_tokens = []
+            
+            for token in extracted_tokens[:5]:  # Limit to top 5 for performance
+                try:
+                    validated_token = await self.validate_extracted_token(token, social_data)
+                    validated_tokens.append(validated_token)
+                    
+                    # Small delay to avoid overwhelming APIs
+                    await asyncio.sleep(0.5)
+                    
+                except Exception as e:
+                    self.logger.error(f"Error validating token {token.symbol}: {e}")
+                    continue
+            
+            # Sort by final confidence
+            validated_tokens.sort(key=lambda x: x.final_confidence, reverse=True)
+            
+            self.logger.info(f"Validation complete: {len(validated_tokens)} tokens validated")
+            return validated_tokens
+        
+        else:
+            # Convert ExtractedTokens to ValidatedTokens without validation
+            validated_tokens = []
+            for token in extracted_tokens:
+                validated_token = ValidatedToken(
+                    symbol=token.symbol,
+                    address=token.address,
+                    name=token.name,
+                    source_text=token.source_text,
+                    extraction_confidence=token.confidence,
+                    context=token.context,
+                    extraction_method=token.extraction_method,
+                    final_confidence=token.confidence,
+                    trading_recommendation="validation_disabled",
+                    warnings=["Validation pipeline disabled"]
+                )
+                validated_tokens.append(validated_token)
+            
+            return validated_tokens
+    
+    async def batch_validate_tokens(self, tokens: List[ExtractedToken]) -> List[ValidatedToken]:
+        """
+        Validate multiple tokens in batch
+        
+        Args:
+            tokens: List of extracted tokens to validate
+            
+        Returns:
+            List of validated tokens
+        """
+        validated_tokens = []
+        
+        # Process in smaller batches to manage API rate limits
+        batch_size = 3
+        for i in range(0, len(tokens), batch_size):
+            batch = tokens[i:i + batch_size]
+            
+            tasks = [self.validate_extracted_token(token) for token in batch]
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for token, result in zip(batch, batch_results):
+                if isinstance(result, Exception):
+                    self.logger.error(f"Error validating {token.symbol}: {result}")
+                    # Create failed validation
+                    failed_token = ValidatedToken(
+                        symbol=token.symbol,
+                        address=token.address,
+                        extraction_confidence=token.confidence,
+                        trading_recommendation="validation_failed",
+                        final_confidence=0.0,
+                        warnings=[f"Validation failed: {str(result)}"]
+                    )
+                    validated_tokens.append(failed_token)
+                else:
+                    validated_tokens.append(result)
+            
+            # Delay between batches
+            if i + batch_size < len(tokens):
+                await asyncio.sleep(2)
+        
+        return validated_tokens
+    
     async def verify_token_address(self, address: str) -> Optional[Dict]:
         """
         Verify token address on Solana blockchain

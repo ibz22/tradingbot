@@ -903,6 +903,11 @@ class RugPullDetector:
         cache_to_save['safe_tokens'] = list(self.cache['safe_tokens'])
         
         save_checkpoint(self.checkpoint_file, cache_to_save)
+    
+    async def close(self):
+        """Close HTTP session and cleanup resources"""
+        if hasattr(self, 'session') and self.session and not self.session.closed:
+            await self.session.close()
 
 
 # Example usage and testing
