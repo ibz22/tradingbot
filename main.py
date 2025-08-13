@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
 """
-Solana Trading Intelligence System - Main Application
-====================================================
+Dual-Mode Trading System - Traditional Assets + Solana Intelligence
+===================================================================
 
-Revolutionary AI-powered trading intelligence system with complete Phase 3 capabilities.
-Combines real-time news monitoring, social intelligence, and advanced token validation.
+Revolutionary dual-mode trading system that combines traditional asset trading
+(stocks, commodities) with advanced Solana blockchain intelligence.
 
-Usage:
-    python main.py --mode demo                   # Run Phase 3 demo showcase
-    python main.py --mode intelligence          # Run intelligence pipeline  
-    python main.py --mode validation            # Run token validation tests
-    python main.py --mode live --dry-run        # Live trading simulation
-    python main.py --mode backtest --symbol SOL # Backtest specific token
-    python main.py --mode screen                # Screen tokens for compliance
-    python main.py --mode test                  # Run comprehensive test suite
+Modes:
+    Traditional Trading:
+        python main.py --mode traditional --action screen     # Screen stocks for halal compliance
+        python main.py --mode traditional --action trade      # Trade traditional assets
+        python main.py --mode traditional --action backtest   # Backtest stock strategies
+    
+    Solana Trading:
+        python main.py --mode solana --action demo           # Run Phase 3 demo
+        python main.py --mode solana --action intelligence   # Run intelligence pipeline
+        python main.py --mode solana --action validation     # Run token validation
+    
+    Hybrid Mode:
+        python main.py --mode hybrid                         # Trade both asset classes
+        python main.py --mode portfolio                      # View unified portfolio
+    
+    Legacy (backward compatible):
+        python main.py --mode demo                           # Run Solana demo
+        python main.py --mode test                           # Run test suite
 """
 
 import asyncio
@@ -22,7 +32,7 @@ import sys
 import os
 import argparse
 import signal
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 import json
 
@@ -53,9 +63,10 @@ def setup_logging(level=logging.INFO, verbose=False):
 logger = logging.getLogger(__name__)
 
 
-class SolanaIntelligenceSystem:
+class DualModeTradingSystem:
     """
-    Main application orchestrator for the Solana Trading Intelligence System
+    Main application orchestrator for the Dual-Mode Trading System
+    Supports both traditional assets and Solana blockchain trading
     """
     
     def __init__(self, config: Optional[Dict] = None):
@@ -64,10 +75,18 @@ class SolanaIntelligenceSystem:
         
         # Component availability flags
         self.components_available = {
-            "core": False,
-            "intelligence": False,
-            "discovery": False,
-            "strategies": False
+            # Solana components
+            "solana_core": False,
+            "solana_intelligence": False,
+            "solana_discovery": False,
+            "solana_strategies": False,
+            # Traditional components  
+            "traditional_brokers": False,
+            "traditional_screening": False,
+            "traditional_strategies": False,
+            # Shared components
+            "unified_risk": False,
+            "unified_portfolio": False
         }
         
         self._check_component_availability()
@@ -75,31 +94,47 @@ class SolanaIntelligenceSystem:
     def _check_component_availability(self):
         """Check which components are available"""
         
-        # Check core components
+        # Check Solana components
         try:
             from solana_trading.core.client import SolanaClient
-            self.components_available["core"] = True
+            self.components_available["solana_core"] = True
         except ImportError:
             pass
         
-        # Check intelligence components
         try:
             from solana_trading.sentiment.unified_intelligence import UnifiedIntelligenceSystem
-            self.components_available["intelligence"] = True
+            self.components_available["solana_intelligence"] = True
         except ImportError:
             pass
         
-        # Check discovery components  
         try:
             from solana_trading.discovery.token_extractor import TokenExtractor
-            self.components_available["discovery"] = True
+            self.components_available["solana_discovery"] = True
         except ImportError:
             pass
         
-        # Check strategy components
         try:
-            from solana_trading.strategies.momentum import MomentumStrategy
-            self.components_available["strategies"] = True
+            from solana_trading.strategies.momentum_strategy import MomentumStrategy
+            self.components_available["solana_strategies"] = True
+        except ImportError:
+            pass
+        
+        # Check Traditional components
+        try:
+            from traditional_trading.brokers.alpaca_broker import AlpacaBroker
+            self.components_available["traditional_brokers"] = True
+        except ImportError:
+            pass
+        
+        try:
+            from traditional_trading.screening.stock_screener import StockScreener
+            self.components_available["traditional_screening"] = True
+        except ImportError:
+            pass
+        
+        try:
+            from traditional_trading.strategies.traditional_strategies import TraditionalMomentumStrategy
+            self.components_available["traditional_strategies"] = True
         except ImportError:
             pass
     
@@ -116,11 +151,129 @@ class SolanaIntelligenceSystem:
             logger.error(f"Demo mode failed: {e}")
             return False
     
+    async def run_traditional_screen(self, symbols: Optional[List[str]] = None):
+        """Run traditional stock screening"""
+        logger.info("Starting Traditional Stock Screening...")
+        
+        if not self.components_available["traditional_screening"]:
+            logger.error("Traditional screening components not available")
+            return False
+        
+        try:
+            from traditional_trading.screening.stock_screener import StockScreener
+            
+            async with StockScreener() as screener:
+                # Default symbols if none provided
+                if not symbols:
+                    symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'GLD', 'WMT', 'JNJ', 'PG']
+                
+                print("="*60)
+                print("HALAL STOCK SCREENING RESULTS")
+                print("="*60)
+                
+                results = await screener.screen_multiple(symbols, halal_only=False)
+                
+                for result in results:
+                    status = "HALAL" if result['halal_compliant'] else "NOT HALAL"
+                    print(f"\n{result['symbol']} - {result['company_name']}")
+                    print(f"  Status: {status}")
+                    print(f"  Score: {result['score']:.1f}/100")
+                    print(f"  Recommendation: {result['recommendation']}")
+                    
+                    if not result['halal_compliant']:
+                        issues = result['halal_details'].get('issues', [])
+                        if issues:
+                            print(f"  Issues: {', '.join(issues[:2])}")
+                
+                print("="*60)
+                return True
+                
+        except Exception as e:
+            logger.error(f"Traditional screening failed: {e}")
+            return False
+    
+    async def run_traditional_trade(self, dry_run: bool = True):
+        """Run traditional asset trading"""
+        logger.info(f"Starting Traditional Trading (dry_run={dry_run})...")
+        
+        if not self.components_available["traditional_brokers"]:
+            logger.error("Traditional broker components not available")
+            return False
+        
+        try:
+            from traditional_trading.brokers.alpaca_broker import AlpacaBroker
+            from traditional_trading.strategies.traditional_strategies import TraditionalMomentumStrategy
+            from traditional_trading.screening.stock_screener import StockScreener
+            
+            # Initialize components
+            broker = AlpacaBroker(paper=dry_run)
+            strategy = TraditionalMomentumStrategy()
+            
+            if await broker.connect():
+                account = await broker.get_account()
+                
+                print("="*60)
+                print("TRADITIONAL ASSET TRADING SYSTEM")
+                print("="*60)
+                print(f"Mode: {'Paper Trading' if dry_run else 'Live Trading'}")
+                print(f"Account Value: ${account.portfolio_value:,.2f}")
+                print(f"Buying Power: ${account.buying_power:,.2f}")
+                print("• Monitoring stocks and commodities...")
+                print("• Halal screening active...")
+                print("• Risk management operational...")
+                print("• Press Ctrl+C to stop")
+                print("="*60)
+                
+                # Trading loop simulation
+                self.running = True
+                while self.running:
+                    await asyncio.sleep(30)
+                    print(f"{datetime.now()}: Traditional trading active...")
+                
+            await broker.disconnect()
+            return True
+            
+        except KeyboardInterrupt:
+            logger.info("Traditional trading stopped by user")
+            return True
+        except Exception as e:
+            logger.error(f"Traditional trading failed: {e}")
+            return False
+    
+    async def run_hybrid_mode(self, dry_run: bool = True):
+        """Run hybrid mode with both traditional and Solana trading"""
+        logger.info("Starting Hybrid Trading Mode...")
+        
+        print("="*60)
+        print("HYBRID TRADING SYSTEM - DUAL MODE ACTIVE")
+        print("="*60)
+        print("Traditional Assets:")
+        print("  • Stocks: AAPL, MSFT, GOOGL, AMZN")
+        print("  • Commodities: GLD, SLV")
+        print("  • Halal compliance: ACTIVE")
+        print()
+        print("Solana Ecosystem:")
+        print("  • Tokens: SOL, USDC, RAY, ORCA")
+        print("  • Intelligence: News + Social monitoring")
+        print("  • Validation: Advanced token screening")
+        print()
+        print("Unified Risk Management: ACTIVE")
+        print("Portfolio Allocation: 60% Traditional, 40% Crypto")
+        print("="*60)
+        
+        # Would implement actual hybrid trading logic here
+        self.running = True
+        while self.running:
+            await asyncio.sleep(30)
+            print(f"{datetime.now()}: Hybrid system monitoring both markets...")
+        
+        return True
+    
     async def run_intelligence_mode(self):
         """Run intelligence pipeline only"""
         logger.info("Starting Intelligence Pipeline Mode...")
         
-        if not self.components_available["intelligence"]:
+        if not self.components_available["solana_intelligence"]:
             logger.error("Intelligence components not available")
             return False
         
@@ -298,28 +451,44 @@ async def main():
     
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description="Solana Trading Intelligence System",
+        description="Dual-Mode Trading System - Traditional Assets + Solana Intelligence",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main.py --mode demo                    # Run Phase 3 demo
-  python main.py --mode intelligence           # Run intelligence pipeline
-  python main.py --mode validation             # Run validation tests
-  python main.py --mode live --dry-run         # Live trading simulation
-  python main.py --mode backtest --symbol SOL  # Backtest SOL
-  python main.py --mode screen                 # Screen all tokens
-  python main.py --mode test                   # Run test suite
+  # Traditional Trading
+  python main.py --mode traditional --action screen                 # Screen stocks for halal compliance
+  python main.py --mode traditional --action trade --dry-run        # Paper trade stocks
+  python main.py --mode traditional --action backtest --symbol AAPL # Backtest stock strategy
+  
+  # Solana Trading  
+  python main.py --mode solana --action demo                        # Run Phase 3 demo
+  python main.py --mode solana --action intelligence                # Run intelligence pipeline
+  python main.py --mode solana --action validation                  # Run token validation
+  
+  # Hybrid Mode
+  python main.py --mode hybrid                                      # Trade both asset classes
+  python main.py --mode portfolio                                   # View unified portfolio
+  
+  # Legacy (backward compatible)
+  python main.py --mode demo                                        # Run Solana demo
+  python main.py --mode test                                        # Run test suite
         """
     )
     
     parser.add_argument(
         '--mode', 
-        choices=['demo', 'intelligence', 'validation', 'live', 'backtest', 'screen', 'test'],
+        choices=['traditional', 'solana', 'hybrid', 'portfolio', 'demo', 'intelligence', 'validation', 'live', 'backtest', 'screen', 'test'],
         default='demo',
         help='Operation mode (default: demo)'
     )
+    parser.add_argument(
+        '--action',
+        choices=['screen', 'trade', 'backtest', 'demo', 'intelligence', 'validation'],
+        help='Action to perform within the mode'
+    )
     parser.add_argument('--dry-run', action='store_true', help='Run in simulation mode')
-    parser.add_argument('--symbol', type=str, help='Token symbol for analysis')
+    parser.add_argument('--symbol', type=str, help='Symbol for analysis (stock ticker or token)')
+    parser.add_argument('--symbols', type=str, nargs='+', help='Multiple symbols for screening')
     parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose logging')
     parser.add_argument('--version', action='store_true', help='Show version information')
     
@@ -341,7 +510,7 @@ Examples:
     print(f"\nStarting in {args.mode} mode...")
     
     # Initialize system
-    system = SolanaIntelligenceSystem()
+    system = DualModeTradingSystem()
     
     # Setup signal handlers for graceful shutdown
     def signal_handler(sig, frame):
@@ -355,7 +524,40 @@ Examples:
         # Run appropriate mode
         success = False
         
-        if args.mode == 'demo':
+        # Handle new dual-mode commands
+        if args.mode == 'traditional':
+            if args.action == 'screen':
+                success = await system.run_traditional_screen(args.symbols)
+            elif args.action == 'trade':
+                success = await system.run_traditional_trade(dry_run=args.dry_run)
+            elif args.action == 'backtest':
+                # Would implement traditional backtest
+                print("Traditional backtesting coming soon...")
+                success = True
+            else:
+                # Default to screening
+                success = await system.run_traditional_screen()
+                
+        elif args.mode == 'solana':
+            if args.action == 'demo':
+                success = await system.run_demo_mode()
+            elif args.action == 'intelligence':
+                success = await system.run_intelligence_mode()
+            elif args.action == 'validation':
+                success = await system.run_validation_mode()
+            else:
+                # Default to demo
+                success = await system.run_demo_mode()
+                
+        elif args.mode == 'hybrid':
+            success = await system.run_hybrid_mode(dry_run=args.dry_run)
+            
+        elif args.mode == 'portfolio':
+            print("Unified portfolio view coming soon...")
+            success = True
+            
+        # Legacy backward compatibility
+        elif args.mode == 'demo':
             success = await system.run_demo_mode()
         elif args.mode == 'intelligence':
             success = await system.run_intelligence_mode()

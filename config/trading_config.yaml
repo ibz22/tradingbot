@@ -1,0 +1,199 @@
+# Dual-Mode Trading System Configuration
+# =======================================
+
+# System Mode Configuration
+system:
+  default_mode: hybrid  # traditional, solana, hybrid
+  enable_paper_trading: true
+  log_level: INFO
+  
+# Traditional Trading Configuration
+traditional:
+  # Broker Settings
+  broker:
+    provider: alpaca  # alpaca, ibkr
+    paper_trading: true
+    api_version: v2
+    
+  # Asset Universe
+  universe:
+    stocks:
+      - AAPL   # Apple Inc.
+      - MSFT   # Microsoft
+      - GOOGL  # Alphabet
+      - AMZN   # Amazon
+      - META   # Meta Platforms
+      - NVDA   # NVIDIA
+      - TSLA   # Tesla
+      - JNJ    # Johnson & Johnson
+      - PG     # Procter & Gamble
+      - WMT    # Walmart
+      
+    etfs:
+      - SPY    # S&P 500
+      - QQQ    # NASDAQ 100
+      - GLD    # Gold ETF
+      - SLV    # Silver ETF
+      - USO    # Oil ETF
+      - SPUS   # Halal S&P 500
+      - HLAL   # Wahed Halal ETF
+      
+    commodities:
+      - GLD    # Gold
+      - SLV    # Silver
+      - USO    # Oil
+      - UNG    # Natural Gas
+      
+  # Strategy Configuration
+  strategies:
+    momentum:
+      enabled: true
+      weight: 0.4
+      params:
+        fast_ma: 20
+        slow_ma: 50
+        rsi_period: 14
+        
+    mean_reversion:
+      enabled: true
+      weight: 0.3
+      params:
+        bb_period: 20
+        bb_std: 2.0
+        zscore_threshold: 2.0
+        
+    breakout:
+      enabled: true
+      weight: 0.3
+      params:
+        lookback_period: 20
+        breakout_threshold: 0.02
+        
+  # Halal Screening
+  halal_screening:
+    enabled: true
+    strict_mode: true
+    thresholds:
+      interest_income_ratio: 0.05     # Max 5%
+      debt_ratio: 0.33                # Max 33%
+      liquid_assets_ratio: 0.70        # Max 70%
+      receivables_ratio: 0.49          # Max 49%
+      
+# Solana Trading Configuration
+solana:
+  # Network Settings
+  network: mainnet-beta
+  rpc_endpoint: https://api.mainnet-beta.solana.com
+  
+  # Token Universe
+  tokens:
+    whitelist:
+      - SOL
+      - USDC
+      - USDT
+      - RAY
+      - ORCA
+      - SRM
+      
+  # Intelligence Settings
+  intelligence:
+    news_monitoring: true
+    social_monitoring: true
+    sentiment_threshold: 0.6
+    
+  # Validation Settings
+  validation:
+    min_liquidity: 100000  # $100k minimum
+    max_age_days: 30
+    min_holders: 100
+    
+# Hybrid Mode Configuration
+hybrid:
+  # Portfolio Allocation
+  allocation:
+    traditional: 0.60  # 60% traditional assets
+    solana: 0.40      # 40% Solana ecosystem
+    
+  # Rebalancing
+  rebalancing:
+    enabled: true
+    frequency: weekly  # daily, weekly, monthly
+    threshold: 0.05    # 5% deviation triggers rebalance
+    
+# Risk Management Configuration
+risk_management:
+  # Portfolio Level
+  max_portfolio_risk: 0.20      # Max 20% at risk
+  max_daily_loss: 0.05          # Max 5% daily loss
+  max_drawdown: 0.15            # Max 15% drawdown
+  
+  # Position Level
+  max_position_size: 0.10       # Max 10% per position
+  default_stop_loss: 0.02       # 2% stop loss
+  risk_reward_ratio: 2.0        # 2:1 risk/reward
+  
+  # Asset Class Limits
+  max_crypto_allocation: 0.40   # Max 40% in crypto
+  max_single_stock: 0.15        # Max 15% in one stock
+  min_cash_reserve: 0.10        # Min 10% cash
+  
+  # Halal Compliance
+  require_halal_compliance: true
+  allow_questionable: false
+  
+# Execution Configuration
+execution:
+  # Order Settings
+  default_order_type: limit
+  slippage_tolerance: 0.002     # 0.2% slippage
+  
+  # Timing
+  market_hours_only: true
+  avoid_first_30min: true       # Avoid volatile open
+  avoid_last_30min: true        # Avoid volatile close
+  
+  # Size Limits
+  max_order_value: 10000        # $10k max per order
+  min_order_value: 100          # $100 minimum
+  
+# Backtesting Configuration
+backtesting:
+  start_date: 2023-01-01
+  end_date: 2024-01-01
+  initial_capital: 100000       # $100k
+  commission: 0.001             # 0.1% commission
+  
+# Monitoring Configuration
+monitoring:
+  # Alerts
+  alerts:
+    email: false
+    slack: false
+    console: true
+    
+  # Metrics
+  track_metrics:
+    - total_return
+    - sharpe_ratio
+    - max_drawdown
+    - win_rate
+    - profit_factor
+    
+  # Reporting
+  reports:
+    daily_summary: true
+    weekly_performance: true
+    risk_report: true
+    
+# API Keys (use environment variables in production)
+api_keys:
+  # Traditional Markets
+  alpaca_api_key: ${ALPACA_API_KEY}
+  alpaca_secret_key: ${ALPACA_SECRET_KEY}
+  fmp_api_key: ${FMP_API_KEY}
+  alpha_vantage_key: ${ALPHA_VANTAGE_API_KEY}
+  
+  # Solana & Intelligence
+  solana_rpc_url: ${SOLANA_RPC_URL}
+  news_api_key: ${NEWS_API_KEY}
+  twitter_bearer_token: ${TWITTER_BEARER_TOKEN}

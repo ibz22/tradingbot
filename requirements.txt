@@ -1,7 +1,7 @@
-# ================================
-# SOLANA TRADING INTELLIGENCE SYSTEM
-# Complete dependency specification
-# ================================
+# ========================================
+# DUAL-MODE TRADING SYSTEM DEPENDENCIES
+# Traditional Assets + Solana Intelligence
+# ========================================
 
 # Core Solana & Blockchain Integration
 solana>=0.30.0
@@ -67,8 +67,14 @@ pycryptodome>=3.18.0
 ratelimit>=2.2.1
 cachetools>=5.3.0
 
+# Traditional Trading & Brokers
+alpaca-py>=0.15.0
+alpaca-trade-api>=3.1.1
+yfinance>=0.2.18
+
 # Financial Data Providers
 alpha-vantage>=2.3.1
+financialmodelingprep>=0.1.0
 
 # Logging & Monitoring  
 coloredlogs>=15.0.1
