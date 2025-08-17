@@ -1,0 +1,34 @@
+{
+  "name": "solsak-trading-platform",
+  "version": "1.0.0",
+  "description": "Modern trading platform for Solana and traditional stocks",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python main.py",
+    "build": "cd frontend && npm run build",
+    "start": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "install-deps": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt"
+  },
+  "repository": {
+    "type": "git",
+    "url": "your-repo-url"
+  },
+  "keywords": [
+    "trading",
+    "solana",
+    "stocks",
+    "nextjs",
+    "fastapi",
+    "typescript",
+    "python"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

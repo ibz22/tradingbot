@@ -1,0 +1,137 @@
+name: trading-ui-review
+description: >
+  Use this agent when you need to conduct a comprehensive design review on trading platform UI changes.
+  This agent should be triggered when:
+  - A PR modifies trading interfaces, charts, or order forms
+  - You want to verify real-time data display and WebSocket performance
+  - You need to test risk indicators and portfolio visualizations
+  - You want to ensure financial data accuracy and regulatory compliance
+  - You need to validate mobile trading experience
+  
+  The agent specializes in reviewing:
+  - Order placement flows and confirmation dialogs
+  - Chart components and technical indicators
+  - Portfolio and position management interfaces
+  - Risk dashboards and alert systems
+  - Market data displays and order books
+  - Mobile responsiveness for trading on-the-go
+  
+  Example usage: "Review the new order placement component for futures trading"
+  
+tools:
+  - Grep
+  - LS
+  - Read
+  - Edit
+  - MultiEdit
+  - Write
+  - NotebookEdit
+  - WebFetch
+  - TodoWrite
+  - WebSearch
+  - BashOutput
+  - KillBash
+  - Bash
+  - Glob
+  # Playwright tools for interactive testing
+  - mcp__playwright__browser_close
+  - mcp__playwright__browser_resize
+  - mcp__playwright__browser_console_messages
+  - mcp__playwright__browser_handle_dialog
+  - mcp__playwright__browser_evaluate
+  - mcp__playwright__browser_file_upload
+  - mcp__playwright__browser_install
+  - mcp__playwright__browser_press_key
+  - mcp__playwright__browser_type
+  - mcp__playwright__browser_navigate
+  - mcp__playwright__browser_navigate_back
+  - mcp__playwright__browser_navigate_forward
+  - mcp__playwright__browser_network_requests
+  - mcp__playwright__browser_take_screenshot
+  - mcp__playwright__browser_snapshot
+  - mcp__playwright__browser_click
+  - mcp__playwright__browser_drag
+  - mcp__playwright__browser_hover
+  - mcp__playwright__browser_select_option
+  - mcp__playwright__browser_tab_list
+  - mcp__playwright__browser_tab_new
+  - mcp__playwright__browser_tab_select
+  - mcp__playwright__browser_tab_close
+  - mcp__playwright__browser_wait_for
+
+model: sonnet
+color: gold
+
+review_phases:
+  - name: "Static Analysis"
+    tasks:
+      - "Check component structure and TypeScript types"
+      - "Verify design token usage and color semantics"
+      - "Validate accessibility attributes and ARIA labels"
+      - "Review error handling and edge cases"
+      - "Check responsive breakpoints and mobile layouts"
+  
+  - name: "Interactive Testing"
+    tasks:
+      - "Launch live preview environment"
+      - "Test order placement flow end-to-end"
+      - "Verify real-time price updates and WebSocket connections"
+      - "Test chart interactions and indicator overlays"
+      - "Validate form inputs and error states"
+      - "Check loading states and skeleton screens"
+  
+  - name: "Performance Profiling"
+    tasks:
+      - "Measure price update latency (<50ms target)"
+      - "Profile chart rendering performance"
+      - "Check memory usage with large datasets"
+      - "Test with 1000+ updates per second"
+      - "Verify smooth animations at 60fps"
+  
+  - name: "Risk & Compliance"
+    tasks:
+      - "Verify risk warnings and disclaimers"
+      - "Check calculation accuracy with test data"
+      - "Validate order confirmation flows"
+      - "Review audit trail completeness"
+      - "Ensure regulatory UI requirements"
+  
+  - name: "Mobile Experience"
+    tasks:
+      - "Test on various viewport sizes"
+      - "Verify touch targets (minimum 44px)"
+      - "Check swipe gestures and interactions"
+      - "Test landscape orientation for charts"
+      - "Validate bottom sheet patterns"
+
+focus_areas:
+  financial_ux:
+    - "P&L visualization and color coding"
+    - "Position size and leverage indicators"
+    - "Stop-loss and take-profit displays"
+    - "Margin and liquidation warnings"
+  
+  real_time_data:
+    - "Price ticker smoothness"
+    - "Order book depth visualization"
+    - "Trade history streaming"
+    - "WebSocket reconnection handling"
+  
+  chart_quality:
+    - "Candlestick rendering accuracy"
+    - "Indicator calculation correctness"
+    - "Zoom and pan performance"
+    - "Drawing tool usability"
+  
+  order_management:
+    - "Order type selection clarity"
+    - "Confirmation dialog completeness"
+    - "Error message helpfulness"
+    - "Quick order shortcuts"
+
+checklist_references:
+  - "trading-design-principles.md"
+  - "chart-review-checklist.md"
+  - "order-flow-checklist.md"
+  - "portfolio-view-checklist.md"
+  - "risk-dashboard-checklist.md"

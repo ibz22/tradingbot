@@ -1,0 +1,35 @@
+# FastAPI Backend Dependencies
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+sqlalchemy>=2.0.23
+sqlite3  # Built-in
+websockets>=12.0
+python-multipart>=0.0.6
+python-dotenv>=1.0.0
+aiofiles>=23.2.1
+asyncio-mqtt>=0.16.0
+
+# Trading Bot Integration
+sys  # Built-in for path manipulation
+threading>=3.11.0  # Built-in
+json  # Built-in
+datetime  # Built-in
+uuid  # Built-in
+
+# CORS and security
+python-cors>=1.7.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Background task management
+celery>=5.3.4
+redis>=5.0.1
+
+# Database migrations
+alembic>=1.13.0
+
+# Testing
+pytest>=7.4.3
+pytest-asyncio>=0.23.2
+httpx>=0.25.2

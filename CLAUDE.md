@@ -155,3 +155,88 @@ The system is designed to work with optional enhanced features:
 - Positions are persisted across sessions using JSON or SQLite storage
 - Position reconciliation ensures consistency between local records and broker positions
 - Support for both long and short positions with proper risk calculations
+
+## Trading UI Design Review
+
+This project uses automated design review workflows for all trading interface changes.
+The review system ensures high standards for financial UX, real-time performance, and regulatory compliance.
+
+### Automated Review Triggers
+
+Automatically review changes to these components:
+- `/trading-platform/frontend/app/markets/*` - Market data displays and tickers
+- `/trading-platform/frontend/app/strategies/*` - Strategy configuration interfaces  
+- `/trading-platform/frontend/app/bots/*` - Bot management and monitoring
+- `/trading-platform/frontend/app/analytics/*` - Charts and technical analysis
+- `/trading-platform/frontend/app/risk-management/*` - Risk dashboards and alerts
+- `/trading-platform/frontend/components/BotCreator/*` - Order placement forms
+- `/trading-platform/frontend/components/Dashboard/*` - Portfolio views
+
+### Design Standards
+
+Follow these core principles:
+
+1. **Financial Data Display**
+   - Use monospace fonts for numbers: `font-family: 'JetBrains Mono'`
+   - Right-align numeric columns in tables
+   - Format prices with appropriate decimal places
+   - Color code P&L: Green (#22C55E) for profit, Red (#EF4444) for loss
+
+2. **Real-time Updates**
+   - Price updates must render within 50ms
+   - Use WebSocket for live data, never polling
+   - Show connection status indicator at all times
+   - Implement graceful reconnection with exponential backoff
+
+3. **Risk Communication**
+   - Display leverage and margin prominently
+   - Show liquidation price when applicable
+   - Require confirmation for orders >10% of portfolio
+   - Use progressive color coding for risk levels
+
+4. **Order Placement**
+   - Two-step confirmation for market orders
+   - Show estimated cost and fees upfront
+   - Validate against available balance
+   - Display slippage warnings for large orders
+
+5. **Mobile Experience**
+   - Minimum 44px touch targets
+   - Bottom sheet pattern for order forms
+   - Swipe gestures for chart navigation
+   - Landscape mode for detailed charts
+
+### Review Commands
+
+Use these commands for different review types:
+
+```bash
+# Full trading UI review (use when in the trading-ui-review directory)
+/trading-ui-review
+
+# Review with specific focus areas
+@agent-trading-ui-review --focus charts
+@agent-trading-ui-review --focus orders
+@agent-trading-ui-review --mobile
+@agent-trading-ui-review --performance
+```
+
+### Performance Targets
+
+All trading interfaces must meet these benchmarks:
+- Price update latency: <50ms
+- Chart render time: <100ms
+- Order placement: <200ms
+- Memory usage: <500MB
+- CPU usage: <30%
+
+### UI Review Resources
+
+- [Trading Design Principles](./trading-ui-review/trading-design-principles.md)
+- [Chart Review Checklist](./trading-ui-review/chart-review-checklist.md)
+- [Order Flow Checklist](./trading-ui-review/order-flow-checklist.md)
+- [Portfolio View Checklist](./trading-ui-review/portfolio-view-checklist.md)
+- [Risk Dashboard Checklist](./trading-ui-review/risk-dashboard-checklist.md)
+- [Performance Guide](./trading-ui-review/docs/performance-guide.md)
+- [Trading UX Guide](./trading-ui-review/docs/trading-ux-guide.md)
+- [Regulatory Requirements](./trading-ui-review/docs/regulatory-requirements.md)

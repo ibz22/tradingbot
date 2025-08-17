@@ -1,0 +1,67 @@
+allowed-tools:
+  - Grep
+  - LS
+  - Read
+  - Edit
+  - MultiEdit
+  - Write
+  - NotebookEdit
+  - WebFetch
+  - TodoWrite
+  - WebSearch
+  - BashOutput
+  - KillBash
+  - Bash
+  - Glob
+  - mcp__playwright__browser_close
+  - mcp__playwright__browser_resize
+  - mcp__playwright__browser_console_messages
+  - mcp__playwright__browser_handle_dialog
+  - mcp__playwright__browser_evaluate
+  - mcp__playwright__browser_file_upload
+  - mcp__playwright__browser_install
+  - mcp__playwright__browser_press_key
+  - mcp__playwright__browser_type
+  - mcp__playwright__browser_navigate
+  - mcp__playwright__browser_navigate_back
+  - mcp__playwright__browser_navigate_forward
+  - mcp__playwright__browser_network_requests
+  - mcp__playwright__browser_take_screenshot
+  - mcp__playwright__browser_snapshot
+  - mcp__playwright__browser_click
+  - mcp__playwright__browser_drag
+  - mcp__playwright__browser_hover
+  - mcp__playwright__browser_select_option
+  - mcp__playwright__browser_tab_list
+  - mcp__playwright__browser_tab_new
+  - mcp__playwright__browser_tab_select
+  - mcp__playwright__browser_tab_close
+  - mcp__playwright__browser_wait_for
+
+description: >
+  Complete a comprehensive trading UI design review of pending changes on the current branch.
+  Reviews trading interfaces for performance, usability, risk communication, and compliance.
+
+command: trading-ui-review
+
+prompt: |
+  Perform a comprehensive trading UI design review following these steps:
+  
+  1. **Identify Changes**: Use git diff to find modified trading UI components
+  2. **Static Analysis**: Review code structure, types, and design patterns
+  3. **Launch Preview**: Start the development server and open in browser
+  4. **Interactive Testing**: Test trading flows with Playwright automation
+  5. **Performance Check**: Measure real-time update performance
+  6. **Risk Review**: Verify risk indicators and warnings
+  7. **Mobile Test**: Check responsive behavior and touch interactions
+  8. **Generate Report**: Provide structured feedback with severity levels
+  
+  Focus on:
+  - Order placement accuracy and confirmation flows
+  - Real-time price update smoothness
+  - Chart rendering performance
+  - Risk visualization clarity
+  - Mobile trading experience
+  - Regulatory compliance elements
+  
+  Reference the trading-design-principles.md for detailed criteria.
